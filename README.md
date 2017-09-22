@@ -1,2 +1,3 @@
-# fusionpbx-app-messenger
-Application for FusionPBX to send/receive SMS messages
+# FusionPBX Messenger
+
+Application for [FusionPBX](http://www.fusionpbx.com) to send/receive SMS messages
