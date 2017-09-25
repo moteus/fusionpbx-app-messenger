@@ -589,7 +589,12 @@ else {
 								"grid_columns": 2
 							}
 						},
-						"properties": properties_scheme
+						"subject": {
+							"title": "Subject",
+							"type": "string",
+							"default": ""
+						}
+						// ,"properties": properties_scheme
 					},
 					"format": "grid",
 					"required":[ "method" ]

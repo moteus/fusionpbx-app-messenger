@@ -210,7 +210,7 @@ local function on_sms_message(self, sms)
   local context     = self._routing.context
   local method      = self._routing.method
   local destination = self._routing.destination
-  local subject     = self._routing.properties.subject or 'SMS From ${source_number}'
+  local subject     = self._routing.subject or 'SMS From ${source_number}'
 
   local date_local = sms:date():tolocal():fmt('%F %T')
   subject = utils.render(subject, {
@@ -291,11 +291,14 @@ function GsmChannel:__init(messenger, channel_info)
     self._routing = channel_info.settings.route
   end
 
+  --[[
   local properties = self._routing and self._routing.properties or {}
   for _, property in ipairs(properties) do
     properties[property.name] = property.value
     log.info('add property %s: %s', property.name, property.value)
   end
+  self._routing.properties  = properties
+  --]]
 
   self._multipart_queue     = MultipartRecvQueue.new(10000)
   self._routing = self._routing or {}
@@ -303,7 +306,6 @@ function GsmChannel:__init(messenger, channel_info)
   self._routing.context     = self._routing.context or 'public'
   self._routing.number      = self._routing.number or self:name()
   self._routing.destination = self._routing.destination or self._routing.number
-  self._routing.properties  = properties
 
   if not port then
     log.error('[%s] undefined port number', self:name())
@@ -387,7 +389,7 @@ function GsmChannel:send(message, settings)
           type               = message.source_proto;
           context            = message.context;
           category           = 'response';
-          direction          = 'inbound';
+          direction          = (message.direction == 'local') and 'local' or 'inbound';
           source             = message.destination;
           source_proto       = 'ussd';
           source_destination = message.text;

@@ -1,10 +1,10 @@
--- hack to be able easy run this script from current dir.
-if not pcall(require,  'app.messenger.resources.classes.Messenger.Utils') then
-  package.path = '../../../../?.lua;' .. package.path
-end
-
 local function messenger_require(name)
   return require ('app.messenger.resources.classes.' .. name)
+end
+
+-- hack to be able easy run this script from current dir.
+if not pcall(messenger_require,  'Messenger.Utils') then
+  package.path = '../../../../?.lua;' .. package.path
 end
 
 require "resources.functions.config"
