@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<include>
+  <context name="internal">
+
+    <extension name="handeled" continue="true">
+      <condition>
+        <action application="unset" data="final_delivery"/>
+        <action application="set" data="final_delivery=true"/>
+      </condition>
+    </extension>
+
+    <extension name="dump" continue="true">
+      <condition>
+        <action application="info"/>
+      </condition>
+    </extension>
+
+    <!--                       Security note                                         -->
+    <!-- FS does not use user`s context but only one that set on sip profile         -->
+    <!-- Also `MESSAGE` requests does not require auth and accepted on all profiles  -->
+    <!-- So you can trust to user name only if you set on sip profle `auth-messages` -->
+
+    <!-- clear auth headers if message send it -->
+    <extension name="auth-init" continue="true">
+      <condition>
+        <action application="unset" data="authorized"  inline="true"/>
+      </condition>
+    </extension>
+
+    <!-- check either we get message from sip endpoint -->
+    <extension name="sip-authenticate" continue="true">
+      <!-- make sure that we get sip message from sofia endpoint -->
+      <condition field="${Event-Name}" expression="^MESSAGE$"/>
+      <condition field="${Event-Calling-File}" expression="^sofia_presence\.c$"/>
+      <condition field="login" expression="^sip:mod_sofia"/>
+      <condition field="sip_profile" expression="^internal$"/>
+
+      <condition>
+        <action application="unset" data="authorized"  inline="true"/>
+        <action application="unset" data="domain_uuid" inline="true"/>
+        <action application="unset" data="domain_name" inline="true"/>
+        <action application="unset" data="user_exists" inline="true"/>
+
+        <action application="set" data="authorized=${user_exists id ${from_user} ${from_host}}" inline="true"/>
+        <action application="set" data="user_context=${user_data ${from} var user_context}"     inline="true"/>
+        <action application="set" data="domain_uuid=${user_data ${from} var domain_uuid}"       inline="true"/>
+        <action application="set" data="domain_name=${user_data ${from} var domain_name}"       inline="true"/>
+        <action application="set" data="user_exists=${user_exists id ${to_user} ${to_host}}"    inline="true"/>
+      </condition>
+    </extension>
+
+    <!-- here we can try non sip auth if `authorized` header is empty -->
+    <!-- e.g. it can be verto message -->
+
+    <!-- if we can not auth any user just ignore message -->
+    <extension name="authenticate-fail">
+      <condition field="authorized" expression="^false$" break="on-true"/>
+      <condition field="authorized" expression="^$" break="on-true"/>
+    </extension>
+
+    <!-- do not set `context` because it may lead to some not obvious results -->
+    <extension name="set-user-context" continue="true">
+      <condition field="user_context" expression="^$" break="never">
+        <action application="set" data="user_context=${context}" inline="true"/>
+      </condition>
+    </extension>
+
+    <!-- user to user message -->
+    <extension name="messenger-local">
+      <condition field="${user_exists}" expression="^true$">
+        <action application="lua" data="messenger forward local router/sms:${user_context}"/>
+      </condition>
+    </extension>
+
+    <!-- handle ussd requests -->
+    <extension name="messenger-ussd">
+      <condition field="${to_user}" expression="^ussd$">
+        <!-- set from_proto so messenger will use it to route response -->
+        <action application="unset" data="from_proto" />
+        <action application="set" data="from_proto=sms" />
+
+        <!-- USSD number inside body. So we set it as source destination field -->
+        <action application="unset" data="to_source" />
+        <action application="set" data="to_source=${_body}" />
+
+        <action application="lua" data="messenger forward local router/ussd:${user_context}"/>
+      </condition>
+    </extension>
+
+    <!-- Convert phone number and forward message as outbound -->
+    <extension name="messenger-ru-mobile">
+      <condition field="${to_user}" expression="^(?:\+?7|8|8107)(9\d{9})$">
+        <action application="lua" data="messenger forward outbound router/sms:${user_context} 7$1@${to_host}" />
+      </condition>
+    </extension>
+
+  </context>
+</include>

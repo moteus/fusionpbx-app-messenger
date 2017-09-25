@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<include>
+  <context name="public">
+
+    <extension name="handeled" continue="true">
+      <condition>
+        <action application="unset" data="final_delivery"/>
+        <action application="set" data="final_delivery=true"/>
+      </condition>
+    </extension>
+
+    <extension name="dump" continue="true">
+      <condition>
+        <action application="info"/>
+      </condition>
+    </extension>
+
+    <!-- forward message from specific gsm modem -->
+    <extension name="gsm" continue="true">
+      <condition field="${Channel-Name}" expression="^gsm01$"/>
+      <condition field="${proto}" expression="^gsm$"/>
+      <condition field="${to_user}" expression="^200$">
+        <!-- We have to set domain_uuid/domain_name -->
+        <action application="set" data="domain_uuid=1d11c717-8442-4040-9d07-f5370d509891" inline="true"/>
+        <action application="set" data="domain_name=pbx.local.domain" inline="true"/>
+
+        <!-- GSM channel set its phone number as `hint` header -->
+        <action application="unset" data="to_source"/>
+        <action application="set" data="to_source=${hint}"/>
+
+        <!-- resend to email -->
+        <action application="lua" data="messenger forward inbound router/email:${domain_name} user100@mail.local.domain"/>
+
+        <!-- resend to sip client -->
+        <action application="lua" data="messenger forward inbound router/sms:${domain_name} 100@pbx.local.domain"/>
+
+      </condition>
+    </extension>
+
+  </context>
+</include>
+
