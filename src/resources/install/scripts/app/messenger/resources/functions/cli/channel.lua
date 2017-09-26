@@ -1,3 +1,5 @@
+-- luacheck: ignore messenger stream freeswitch argv
+
 -- usage
 if not argv[1] then
 	stream:write('  channel [kill|start] <channel uuid>\n')
@@ -10,7 +12,7 @@ if action == 'kill' then
 	if not uuid then
 		stream:write('-ERR no channel uuid')
 	else
-		local response, event = messenger:channelKill(uuid)
+		local response = messenger:channelKill(uuid)
 		if response then
 			stream:write(response)
 		else
@@ -25,7 +27,7 @@ if action == 'start' then
 	if not uuid then
 		stream:write('-ERR no channel uuid')
 	else
-		local response, event = messenger:channelStart(uuid)
+		local response = messenger:channelStart(uuid)
 		if response then
 			stream:write(response)
 		else

@@ -1,6 +1,7 @@
 require "resources.functions.split"
 
-local log           = require "resources.functions.log".messenger_client
+-- luacheck: push ignore freeswitch argv scripts_dir split_first
+
 local json          = require "resources.functions.lunajson"
 local api           = require "resources.functions.api"
 local Consumer      = require "resources.functions.event_consumer"
@@ -20,7 +21,7 @@ local function send_recv(event, timeout)
 	event:fire()
 
 	local response
-	for event in Consumer.ievents(events, timer:rest()) do
+	for event in Consumer.ievents(events, timer:rest()) do -- luacheck: ignore event
 		local response_uuid = event and event:getHeader('Messenger-Response-UUID')
 		if request_uuid == response_uuid then
 			response = event
@@ -66,7 +67,6 @@ local function last_message_elapsed(typ, cat, dst)
 		})
 		dbh:release()
 		elapsed = tonumber(elapsed)
-		
 	end
 	return elapsed and math.floor(elapsed)
 end
@@ -89,7 +89,7 @@ local function split_message_type(number, default)
 	return default or 'sms', number
 end
 
-function MessengerClient:_resend(timeout, message_uuid)
+function MessengerClient:_resend(timeout, message_uuid) -- luacheck: ignore self
 	local event = freeswitch.Event('CUSTOM', 'messenger::resend')
 	event:addHeader('Message-UUID', message_uuid)
 	if timeout and timeout > 0 then
@@ -113,7 +113,7 @@ end
 -- @param text message itself
 -- @param expire in seconds. how long try delivery this message
 -- @param params
-function MessengerClient:_send(timeout, channel, context, direction, category, source, destination, subject, text, ...)
+function MessengerClient:_send(timeout, channel, context, direction, category, source, destination, subject, text, ...) -- luacheck: ignore 631 self
 	local expire, params
 	if ... then
 		if type(...) == 'table' then
@@ -206,7 +206,7 @@ function MessengerClient:sendViaContextSync(timeout, context, ...)
 	return self:_send(timeout, nil, context, ...)
 end
 
-function MessengerClient:sendViaChatplan(proto, context, direction, category, source, destination, text, ...)
+function MessengerClient:sendViaChatplan(proto, context, direction, category, source, destination, text, ...) -- luacheck: ignore 631 self
 	local expire, params
 	if ... then
 		if type(...) == 'table' then
@@ -217,12 +217,12 @@ function MessengerClient:sendViaChatplan(proto, context, direction, category, so
 	end
 
 	local from_full = source
-	if from_proto == 'sip' and not string.find(source, '^sip:') then
-		from_full = 'sip:' .. from_full
-	end
+	local from_proto, from = split_message_type(from_full)
+	local from_user, from_host = split_first(from, '@')
 
-	local from_user, from_host --! todo
-	local to_user, to_host --! todo
+	local to_full = destination
+	local to_proto, to = split_message_type(to_full, proto)
+	local to_user, to_host = split_first(to, '@')
 
 	expire = tostring(tonumber(expire) or 3600)
 
@@ -233,11 +233,13 @@ function MessengerClient:sendViaChatplan(proto, context, direction, category, so
 	event:addHeader("skip_global_process", "false"                  )
 
 	event:addHeader("from",                source                   )
+	event:addHeader("from_proto",          from_proto               )
 	event:addHeader("from_user",           from_user                )
 	event:addHeader("from_host",           from_host                )
 	event:addHeader("from_full",           from_full                )
 
 	event:addHeader("to",                  destination              )
+	event:addHeader("to_proto",            to_proto                 )
 	event:addHeader("to_user",             to_user                  )
 	event:addHeader("to_host",             to_host                  )
 
@@ -300,10 +302,12 @@ end
 
 -- Some statistic functions
 
-function MessengerClient:lastSendElapsed(typ, cat, dst)
+function MessengerClient:lastSendElapsed(typ, cat, dst) -- luacheck: ignore self
 	return last_message_elapsed(typ, cat, dst)
 end
 
 end
+
+-- luacheck: pop
 
 return MessengerClient

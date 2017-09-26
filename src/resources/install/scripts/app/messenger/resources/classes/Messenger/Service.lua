@@ -16,6 +16,8 @@
 -- service:run()
 --
 
+-- luacheck: push ignore freeswitch argv scripts_dir
+
 local uv            = require "lluv"
 local ut            = require "lluv.utils"
 local esl           = require "lluv.esl"
@@ -87,10 +89,10 @@ local function service_pid_file(service, pid_path)
 
   local function read_file(p, cb)
     local buf = buffers:pop() or uv.buffer(1024)
-    uv.fs_open(p, "r", function(file, err, path)
+    uv.fs_open(p, "r", function(file, err)
       buffers:push(buf)
       if err then return cb(err) end
-      file:read(buf, function(file, err, data, size)
+      file:read(buf, function(file, err, data, size) -- luacheck: ignore file err
         file:close()
         if err then return cb(err) end
         return cb(nil, data:to_s(size))
@@ -99,12 +101,12 @@ local function service_pid_file(service, pid_path)
   end
 
   local function write_file(p, data, cb)
-    uv.fs_open(p, 'w+', function(file, err, path)
-    if err then return cb(err) end
-    file:write(data, function(file, err)
-      file:close()
-      return cb(err)
-    end)
+    uv.fs_open(p, 'w+', function(file, err)
+      if err then return cb(err) end
+      file:write(data, function(file, err) -- luacheck: ignore file err
+        file:close()
+        return cb(err)
+      end)
     end)
   end
 
@@ -133,12 +135,12 @@ local function service_pid_file(service, pid_path)
   end
 
   -- crete pid file
-  uv.fs_mkdir(pid_path, function(loop, err)
+  uv.fs_mkdir(pid_path, function(_, err)
     if err and err:no() ~= uv.EEXIST then
       log.errf('can not create pid directory: %s', tostring(err))
       return uv.stop()
     end
-    write_file(pid.file, pid.pid, function(err)
+    write_file(pid.file, pid.pid, function(err) -- luacheck: ignore err
       if err then
         log.errf('can not create pid file: %s', tostring(err))
         return uv.stop()
@@ -146,7 +148,7 @@ local function service_pid_file(service, pid_path)
 
       uv.timer():start(30000, 30000, test_pid_file)
 
-      uv.fs_event():start(pid.file, function(_, err, path, ev, ...)
+      uv.fs_event():start(pid.file, function(_, err) -- luacheck: ignore err
         if err then
           log.warningf('can not start file monitoring')
         end
@@ -188,7 +190,7 @@ local function service_init_loop(service)
   local log = service:logger()
 
   if service._plain_events then
-    service:on("esl::event::**", function(self, eventName, event)
+    service:on("esl::event::**", function(self, eventName, event) -- luacheck: ignore eventName
       local name, subclass = event:getHeader('Event-Name'), event:getHeader('Event-Subclass')
       if subclass then
         self:emit(name .. '::' .. subclass, event)
@@ -197,8 +199,8 @@ local function service_init_loop(service)
       end
     end)
   end
-  
-  service:on("esl::event::CUSTOM::*", function(self, eventName, event)
+
+  service:on("esl::event::CUSTOM::*", function(self, eventName, event) -- luacheck: ignore self eventName
     if event:getHeader('Event-Subclass') ~= 'fusion::service::control' then
       return
     end
@@ -223,24 +225,24 @@ local function service_init_loop(service)
     return service_response(service, event, '-ERR unsupported command')
   end)
 
-  service:on("esl::event::SHUTDOWN::*", function(self, eventName, event)
+  service:on("esl::event::SHUTDOWN::*", function(self, eventName, event) -- luacheck: ignore self eventName event
     log.infof('freeswitch shutdown')
     return uv.stop()
   end)
 
-  service:on('esl::reconnect', function(self, eventName)
+  service:on('esl::reconnect', function(self, eventName) -- luacheck: ignore self eventName
     log.infof('esl connected')
   end)
 
-  service:on('esl::disconnect', function(self, eventName, err)
-    log.infof('esl disconnected')
+  service:on('esl::disconnect', function(self, eventName, err) -- luacheck: ignore self eventName
+    log.infof('esl disconnected: %s', tostring(err))
   end)
 
-  service:on('esl::error::**', function(self, eventName, err)
+  service:on('esl::error::**', function(self, eventName, err) -- luacheck: ignore self eventName
     log.errf('esl error: %s', tostring(err))
   end)
 
-  service:on('esl::close', function(self, eventName, err)
+  service:on('esl::close', function(self, eventName, err) -- luacheck: ignore self eventName err
     -- print(eventName, err)
   end)
 
@@ -305,7 +307,7 @@ function EventService:run(error_handler)
   service_start(self, error_handler)
 end
 
-function EventService:stop()
+function EventService:stop() -- luacheck: ignore self
   uv.stop()
 end
 
@@ -318,5 +320,7 @@ function EventService:name()
 end
 
 end
+
+-- luacheck: pop
 
 return EventService

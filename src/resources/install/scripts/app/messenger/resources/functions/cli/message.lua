@@ -1,3 +1,5 @@
+-- luacheck: ignore messenger stream freeswitch argv
+
 -- usage
 if not argv[1] then
 	stream:write('  message resend <message uuid>\n')
@@ -10,7 +12,7 @@ if action == 'resend' then
 	if not message_uuid then
 		stream:write('-ERR no message uuid')
 	else
-		local response, event = messenger:resendSync(30, message_uuid)
+		local response = messenger:resendSync(30, message_uuid)
 		if response then
 			stream:write(response)
 		else

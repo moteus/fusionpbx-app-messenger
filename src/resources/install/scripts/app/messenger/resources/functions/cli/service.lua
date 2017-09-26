@@ -1,3 +1,5 @@
+-- luacheck: ignore messenger stream freeswitch argv log
+
 -- usage
 if not argv[1] then
 	stream:write('  service [start|stop|status]\n')

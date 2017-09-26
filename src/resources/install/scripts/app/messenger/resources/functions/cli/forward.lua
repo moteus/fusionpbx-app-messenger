@@ -1,7 +1,12 @@
+-- luacheck: ignore messenger freeswitch message argv log
+
 local message = message
 if not message then
 	return log.err('this action should be called only from chatplan')
 end
+
+require "resources.functions.split"
+-- luacheck: ignore split_first
 
 local json = require "resources.functions.lunajson"
 
@@ -105,7 +110,7 @@ end
 
 event:addBody(msg)
 
-local msg = ("[messenger] Forward message from [%s:%s] to [%s:%s] via %s/%s \n"):format(
+msg = ("[messenger] Forward message from [%s:%s] to [%s:%s] via %s/%s \n"):format(
 	event:getHeader('Message-Source-Proto'), event:getHeader('Message-Source'),
 	event:getHeader('Message-Destination-Proto'), event:getHeader('Message-Destination'),
 	route_mode, route_info

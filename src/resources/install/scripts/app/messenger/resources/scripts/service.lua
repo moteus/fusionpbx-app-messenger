@@ -7,6 +7,7 @@ if not pcall(messenger_require,  'Messenger.Utils') then
   package.path = '../../../../?.lua;' .. package.path
 end
 
+-- luacheck: push ignore database
 require "resources.functions.config"
 
 local pp            = require "pp"
@@ -61,14 +62,14 @@ messenger.__SERVICE = service
 function service:sendResponse(event, response)
   local response_uuid = event:getHeader('Messenger-Response-UUID')
   if response_uuid then
-    local event = esl.Event('CUSTOM', 'messenger::response')
+    local event = esl.Event('CUSTOM', 'messenger::response') -- luacheck: ignore event
     event:addHeader('Messenger-Response-UUID', response_uuid)
     if type(response) == 'string' then
       event:addHeader('Messenger-Response', response)
     else
       event:addBody(json.encode(response), 'application/json')
     end
-    service:sendEvent(event)
+    self:sendEvent(event)
   end
 end
 
@@ -146,10 +147,10 @@ local function decode_message(event, cb)
   end
 
   if number then
-    local number, domain_name = ut.split_first(number, '@', true)
+    local _, domain_name = ut.split_first(number, '@', true)
     if domain_name then
       message.domain_name = domain_name
-      messenger:domain_by_name(domain_name, function(domain_uuid)
+      messenger:domain_by_name(domain_name, function(domain_uuid) -- luacheck: ignore domain_uuid
         message.domain_uuid = domain_uuid
         if domain_uuid then
           cb(message)
@@ -171,9 +172,9 @@ service:on('CUSTOM::messenger::send', function(self, eventName, event)
 
     -- send via specific channel
     if message.channel then
-      channel = messenger:channel(message.channel)
+      local channel = messenger:channel(message.channel)
       if not channel then
-        log.error('can not found channel [%s]', message_channel)
+        log.error('can not found channel [%s]', message.channel)
         return
       end
       return channel:send(message)
@@ -185,14 +186,14 @@ service:on('CUSTOM::messenger::send', function(self, eventName, event)
   self:sendResponse(event, '+OK')
 end)
 
-service:on('CUSTOM::messenger::resend', function(self, eventName, event)
+service:on('CUSTOM::messenger::resend', function(self, eventName, event) -- luacheck: ignore eventName
   local message_uuid = event:getHeader('Message-UUID')
   log.info('resend message [%s]', message_uuid)
   messenger:resend(message_uuid)
   self:sendResponse(event, '+OK')
 end)
 
-service:on('CUSTOM::messenger::configure', function(self, eventName, event)
+service:on('CUSTOM::messenger::configure', function(self, eventName, event) -- luacheck: ignore eventName
   local action = event:getHeader('Messenger-Action')
 
   if action == 'channels-rescan' then
@@ -252,5 +253,7 @@ uv.defer(function()
   messenger:rescan_channels()
   router:reload()
 end)
+
+-- luacheck: pop
 
 do service:run(stp.stacktrace) end

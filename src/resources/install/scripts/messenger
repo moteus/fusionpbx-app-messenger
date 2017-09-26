@@ -1,3 +1,5 @@
+-- luacheck: ignore stream freeswitch argv messenger log
+
 local function messenger_require(name)
 	return require ('app.messenger.resources.classes.' .. name)
 end

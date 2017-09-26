@@ -1,3 +1,5 @@
+-- luacheck: ignore messenger stream freeswitch argv
+
 -- usage
 if not argv[1] then
 	stream:write('  mwi [start|stop|status]\n')

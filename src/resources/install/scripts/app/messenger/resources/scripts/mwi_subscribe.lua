@@ -1,6 +1,8 @@
 require "resources.functions.config"
 require "resources.functions.split"
 
+-- luacheck: ignore split_first
+
 local function messenger_require(name)
   return require ('app.messenger.resources.classes.' .. name)
 end
@@ -8,7 +10,6 @@ end
 local service_name = "mwi_messenger"
 
 local log               = require "resources.functions.log"[service_name]
-local presence_in       = require "resources.functions.presence_in"
 local Database          = require "resources.functions.database"
 local BasicEventService = require "resources.functions.basic_event_service"
 local MessengerClient   = messenger_require "Messenger.Client"
@@ -21,7 +22,7 @@ local resend_sip_messages, check_expire_messages do
 local select_sql = [[
 SELECT messenger_message_uuid
   FROM v_messenger_messages
-  WHERE messenger_message_status = 'fail' 
+  WHERE messenger_message_status = 'fail'
     AND (
       messenger_message_status_text = 'error/user_not_registered'
       OR messenger_message_status_text = 'Sync send - fail (0)'
@@ -58,11 +59,11 @@ resend_sip_messages = function(self, user)
 	local dbh = Database.new('system')
 	if not dbh then return end
 
-	local messages, err = dbh:fetch_all(select_sql, {destination=user})
+	local messages = dbh:fetch_all(select_sql, {destination=user})
 
 	if not messages then return end
 
-	for i, message in ipairs(messages) do
+	for _, message in ipairs(messages) do
 		local ok, err = dbh:query(aquire_sql, {uuid = message.messenger_message_uuid})
 		if not ok then
 			log.errf('can not aquire message: ', tostring(err))
@@ -76,7 +77,7 @@ resend_sip_messages = function(self, user)
 	dbh:release()
 end
 
-check_expire_messages = function (self, seconds)
+check_expire_messages = function (self, seconds) -- luacheck: ignore self
 	local dbh = Database.new('system')
 	if not dbh then return end
 	dbh:query(expire_sql, {seconds = -seconds})
@@ -87,7 +88,7 @@ end
 
 end
 
-service:bind("MESSAGE_QUERY", function(self, name, event)
+service:bind("MESSAGE_QUERY", function(self, eventName, event) -- luacheck: ignore self eventName
 	local account_header = event:getHeader('Message-Account')
 	if not account_header then
 		return log.warningf("MWI message without `Message-Account` header")

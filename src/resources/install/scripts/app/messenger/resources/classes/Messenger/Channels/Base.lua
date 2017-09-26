@@ -5,7 +5,6 @@ end
 local uv            = require "lluv"
 local ut            = require "lluv.utils"
 
-local utils         = messenger_require "Messenger.Utils"
 local Logger        = messenger_require "Messenger.Logger"
 
 local log           = Logger.get('chann')
@@ -18,7 +17,7 @@ function BaseChannel:__init(messenger, channel_info)
   self._messenger = messenger
   self._info      = channel_info
   self._name      = channel_info.name
-  
+
   if channel_info.domain_name then
     self._name = self._name .. '@' .. channel_info.domain_name
   end
