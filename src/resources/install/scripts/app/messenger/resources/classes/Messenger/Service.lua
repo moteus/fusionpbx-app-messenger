@@ -18,6 +18,7 @@
 
 local uv            = require "lluv"
 local ut            = require "lluv.utils"
+local esl           = require "lluv.esl"
 local ESLConnection = require "lluv.esl.connection".Connection
 local Logging       = require "log"
 
@@ -31,6 +32,38 @@ else
   local Uuid = require "uuid"
   new_uuid = function()
     return Uuid.new()
+  end
+end
+
+local json
+if freeswitch then
+  json  = require "resources.functions.lunajson"
+else
+  json  = require "dkjson"
+end
+
+-- send response to FS
+local function service_response(service, request, response, cb)
+  local request_uuid = request:getHeader('Service-Request-UUID')
+
+  -- if sender does not ask as to send response just ignore it
+  if not request_uuid then
+    if cb then uv.defer(cb) end
+    return
+  end
+
+  local event = esl.Event('CUSTOM', 'fusion::service::response')
+  event:addHeader('Service-Response-UUID', request_uuid)
+  if type(response) == 'string' then
+    event:addHeader('Service-Response', response)
+  else
+    event:addBody(json.encode(response), 'application/json')
+  end
+
+  if cb then
+    service:sendEvent(event, cb)
+  else
+    service:sendEvent(event)
   end
 end
 
@@ -173,10 +206,21 @@ local function service_init_loop(service)
     if service:name() ~= event:getHeader('service-name') then return end
 
     local command = event:getHeader('service-command')
+
     if command == "stop" then
       log.infof('receive stop service command')
-      return uv.stop()
+      return service_response(service, event, '+OK', function()
+        uv.stop()
+      end)
     end
+
+    if command == "status" then
+      log.notice("receive status service command")
+      return service_response(service, event, '+OK running')
+    end
+
+    log.warningf('Unknown service command: %s', command or '<NONE>')
+    return service_response(service, event, '-ERR unsupported command')
   end)
 
   service:on("esl::event::SHUTDOWN::*", function(self, eventName, event)
