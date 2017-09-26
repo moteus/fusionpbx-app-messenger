@@ -160,7 +160,7 @@ function SipChannel:send(message, settings)
       body         = message.text;
       -- profile      = 'internal';
       -- subject      = '----';
-      type         = 'text/plain; charset=utf-8';
+      type         = message.content_type or 'text/plain';
       waitReport   = true;
       checkContact = true;
       -- timeout      = 120;
