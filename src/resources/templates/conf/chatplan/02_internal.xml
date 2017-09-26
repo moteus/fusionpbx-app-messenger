@@ -74,7 +74,7 @@
 
     <!-- handle ussd requests -->
     <extension name="messenger-ussd">
-      <condition field="${to_user}" expression="^ussd$">
+      <condition field="${to_user}" expression="^ussd">
         <!-- set from_proto so messenger will use it to route response -->
         <action application="unset" data="from_proto" />
         <action application="set" data="from_proto=sms" />
@@ -83,6 +83,7 @@
         <action application="unset" data="to_source" />
         <action application="set" data="to_source=${_body}" />
 
+        <!-- forward by default to `to` header value -->
         <action application="lua" data="messenger forward local router/ussd:${user_context}"/>
       </condition>
     </extension>
