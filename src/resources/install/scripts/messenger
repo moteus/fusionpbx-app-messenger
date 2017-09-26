@@ -1,4 +1,3 @@
--- cli interface for messenger
 local function messenger_require(name)
 	return require ('app.messenger.resources.classes.' .. name)
 end
@@ -8,7 +7,7 @@ local function cli_require(command)
 	return pcall(require, modname)
 end
 
-local commands = {'channels' ,'channel' ,'routes' ,'message' ,'service'}
+local commands = {'channels' ,'channel' ,'routes' ,'message' ,'service', 'mwi'}
 
 -- cli interface for messenger
 local function usage()
