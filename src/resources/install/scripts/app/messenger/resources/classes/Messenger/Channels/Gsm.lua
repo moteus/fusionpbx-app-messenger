@@ -244,7 +244,7 @@ local function on_delivery_report(self, sms)
 
   if success then
     log.info('[%s] SMS Send pass; Message reference: %s', self:name(), ref)
-    messenger:notification_status(ref, self:id(), STATUS.SUCCESS)
+    messenger:message_status(ref, self:id(), STATUS.SUCCESS)
   elseif status.temporary then
     log.warning('[%s] SMS send continue: %s; Message reference: %s',
       self:name(), status.info, sms:reference()
@@ -253,7 +253,7 @@ local function on_delivery_report(self, sms)
     log.error('[%s] SMS Send fail: %s; Message reference: %s',
       self:name(), status.info, sms:reference()
     )
-    messenger:notification_status(tostring(sms:reference()), self:id(), STATUS.FAIL, status.info)
+    messenger:message_status(tostring(sms:reference()), self:id(), STATUS.FAIL, status.info)
   end
 end
 
@@ -368,11 +368,11 @@ function GsmChannel:send(message, settings)
 
   local expire = tonumber(message.expire) or 3600
 
-  messenger:notification_register(self:id(), message, settings, function(message_uuid, res )-- luacheck: ignore res
+  messenger:message_register(self:id(), message, settings, function(message_uuid, res )-- luacheck: ignore res
     if not self._ready then
       local msg = 'channel not ready'
       log.error('[%s] SMS Send fail: %s', self:name(), msg)
-      return messenger:notification_status(message_uuid, self:id(), STATUS.FAIL, msg)
+      return messenger:message_status(message_uuid, self:id(), STATUS.FAIL, msg)
     end
 
     if message.type == 'ussd' then
@@ -380,7 +380,7 @@ function GsmChannel:send(message, settings)
         if err or not msg then
           local status_text = tostring(err or 'No response')
           log.error('[%s] USSD Send fail: %s', self:name(), status_text)
-          return messenger:notification_status(message_uuid, self:id(), STATUS.FAIL, status_text)
+          return messenger:message_status(message_uuid, self:id(), STATUS.FAIL, status_text)
         end
         log.info('[%s] USSD response: [%s] %s', self:name(), msg:status(), msg:text('cp866'))
 
@@ -402,7 +402,7 @@ function GsmChannel:send(message, settings)
         route_message(self._messenger, response, function(message) -- luacheck: ignore message
           router:send(message)
         end)
-        messenger:notification_status(message_uuid, self:id(), STATUS.SUCCESS)
+        messenger:message_status(message_uuid, self:id(), STATUS.SUCCESS)
       end)
     end
 
@@ -423,23 +423,23 @@ function GsmChannel:send(message, settings)
         log.info('[%s] Get temporary response: %s; Message reference: %s',
           self:name(), response.info, ref or '<NONE>'
         )
-        if ref then messenger:notification_mark(message_uuid, ref) end
+        if ref then messenger:message_mark(message_uuid, ref) end
         return
       end
 
       if not (response or err) then
         log.info('[%s] Sending message...; Message reference: %s', self:name(), ref or '<NONE>')
-        if ref then messenger:notification_mark(message_uuid, ref) end
+        if ref then messenger:message_mark(message_uuid, ref) end
         return
       end
 
       if err or not response.success then
         local msg = tostring(err or response.info)
         log.error('[%s] SMS Send fail: %s; Message reference: %s', self:name(), msg, ref or '<NONE>')
-        messenger:notification_status(message_uuid, self:id(), STATUS.FAIL, msg)
+        messenger:message_status(message_uuid, self:id(), STATUS.FAIL, msg)
       else
         log.info('[%s] SMS Send pass; Message reference: %s', self:name(), ref or '<NONE>')
-        messenger:notification_status(message_uuid, self:id(), STATUS.SUCCESS)
+        messenger:message_status(message_uuid, self:id(), STATUS.SUCCESS)
       end
     end)
   end)

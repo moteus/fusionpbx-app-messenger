@@ -54,7 +54,7 @@ function EmailChannel:send(message, settings)
     message = {subject, text};
   }
 
-  messenger:notification_register(self:id(), message, settings, function(message_uuid, res) -- luacheck: ignore res
+  messenger:message_register(self:id(), message, settings, function(message_uuid, res) -- luacheck: ignore res
     --! @todo check `res` code
     request:sendmail(SMTP, function(err, result, code, response)
       local msg
@@ -65,12 +65,12 @@ function EmailChannel:send(message, settings)
       end
       if err or not utils.is_2xx(code) then
         log.error('[%s] can not send email: %s', self:name(), msg)
-        messenger:notification_status(message_uuid, self:id(), STATUS.FAIL, msg)
+        messenger:message_status(message_uuid, self:id(), STATUS.FAIL, msg)
       else
         log.info("[%s] send email done: %s %s %s",
           self:name(), tostring(result), tostring(code), tostring(response)
         )
-        messenger:notification_status(message_uuid, self:id(), STATUS.SUCCESS, msg)
+        messenger:message_status(message_uuid, self:id(), STATUS.SUCCESS, msg)
       end
     end)
   end)

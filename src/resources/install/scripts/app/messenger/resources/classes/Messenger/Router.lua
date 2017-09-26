@@ -112,25 +112,25 @@ ORDER BY r.messenger_route_uuid, rd.messenger_route_detail_order
 
     local route
     for _, row in ipairs(res) do
-      local notification_route_uuid
-        ,notification_route_context
-        ,notification_route_name
-        ,notification_route_type
-        ,notification_route_destination
-        ,notification_channel_uuid
-        ,notification_route_detail_settings
+      local message_route_uuid
+        ,message_route_context
+        ,message_route_name
+        ,message_route_type
+        ,message_route_destination
+        ,message_channel_uuid
+        ,message_route_detail_settings
         ,domain_uuid = utils.unpack(row)
-      if (not route) or route.uuid ~= notification_route_uuid then
+      if (not route) or route.uuid ~= message_route_uuid then
         if route then self:_add(route) end
 
-        route = {context = notification_route_context, domain_uuid = domain_uuid, type = notification_route_type,
-          name = notification_route_name, uuid = notification_route_uuid,
-          destination = utils.coalesce(notification_route_destination, '')
+        route = {context = message_route_context, domain_uuid = domain_uuid, type = message_route_type,
+          name = message_route_name, uuid = message_route_uuid,
+          destination = utils.coalesce(message_route_destination, '')
         }
       end
-      local settings = utils.coalesce(notification_route_detail_settings)
+      local settings = utils.coalesce(message_route_detail_settings)
       if settings then settings = json.decode(settings) end
-      utils.append(route, { notification_channel_uuid, settings })
+      utils.append(route, { message_channel_uuid, settings })
     end
 
     if route then self:_add(route) end

@@ -152,7 +152,7 @@ function SipChannel:send(message, settings)
   local messenger = self._messenger
   local cnn = self._cnn
 
-  messenger:notification_register(self:id(), message, settings, function(message_uuid, res) -- luacheck: ignore res
+  messenger:message_register(self:id(), message, settings, function(message_uuid, res) -- luacheck: ignore res
     -- @todo check `res` parameter
     local sip_message_optins = {
       from         = message.source;
@@ -169,13 +169,13 @@ function SipChannel:send(message, settings)
     sip_message(cnn, sip_message_optins, function(_, err, res) -- luacheck: ignore res
       if err then
         log.error('[%s] Fail send message: %s', self:name(), err)
-        return messenger:notification_status(message_uuid, self:id(), STATUS.FAIL, tostring(err))
+        return messenger:message_status(message_uuid, self:id(), STATUS.FAIL, tostring(err))
       end
 
       -- We send message without waiting response. So we really can not
       -- be sure either this message delivery or not.
       if res:getHeader('Nonblocking-Delivery') == 'true' then
-        messenger:notification_status(message_uuid, self:id(), STATUS.SUCCESS, 'async send without delivery report')
+        messenger:message_status(message_uuid, self:id(), STATUS.SUCCESS, 'async send without delivery report')
         return log.info("[%s] Async send - pass", self:name())
       end
 
@@ -191,21 +191,21 @@ function SipChannel:send(message, settings)
           msg = 'Sync send - pass (' .. code .. ')'
         end
         log.info('[%s] %s', self:name(), msg)
-        return messenger:notification_status(message_uuid, self:id(), status, msg)
+        return messenger:message_status(message_uuid, self:id(), status, msg)
       end
 
       -- E.g. if we use `sip_contact` to get profile and user not registered.
       if nil == res:getReply() then
         local reply = res:getBody() or '----'
         log.info('[%s] Fail send message: %s', self:name(), reply)
-        return messenger:notification_status(message_uuid, self:id(), STATUS.FAIL, reply)
+        return messenger:message_status(message_uuid, self:id(), STATUS.FAIL, reply)
       end
 
       -- This can be if `sendEvent` returns error?
       local _, _, reply = res:getReply()
       reply = reply or '----'
       log.info('[%s] Fail send message: %s', self:name(), reply)
-      return messenger:notification_status(message_uuid, self:id(), STATUS.FAIL, reply)
+      return messenger:message_status(message_uuid, self:id(), STATUS.FAIL, reply)
     end)
   end)
 end

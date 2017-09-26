@@ -280,7 +280,7 @@ function Messenger:_resend(cond, params)
   end)
 end
 
-function Messenger:notification_register(channel_uuid, message, settings, cb)
+function Messenger:message_register(channel_uuid, message, settings, cb)
   local cnn = self._cnn
 
   if settings then settings = json.encode(settings) end
@@ -360,7 +360,7 @@ function Messenger:notification_register(channel_uuid, message, settings, cb)
   end)
 end
 
-function Messenger:notification_mark(message_uuid, id, cb)
+function Messenger:message_mark(message_uuid, id, cb)
   local cnn = self._cnn
 
   assert(id ~= nil)
@@ -376,7 +376,7 @@ function Messenger:notification_mark(message_uuid, id, cb)
   end)
 end
 
-function Messenger:notification_status(message_uuid, channel_uuid, status, status_message, cb)
+function Messenger:message_status(message_uuid, channel_uuid, status, status_message, cb)
   local cnn = self._cnn
 
   local sql = [[UPDATE v_messenger_messages
