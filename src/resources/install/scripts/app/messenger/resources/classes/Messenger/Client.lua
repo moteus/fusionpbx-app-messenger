@@ -85,7 +85,7 @@ end
 
 local function split_message_type(number, default)
 	local typ, num = split_first(number, ':', true)
-	if typ then return typ, num end
+	if num then return typ, num end
 	return default or 'sms', number
 end
 
@@ -156,9 +156,14 @@ function MessengerClient:_send(timeout, channel, context, direction, category, s
 	-- event:getHeader('Message-Subject')
 	-- event:getHeader('Message-Context')
 
+	local content_type = params and params.content_type
+
 	local body
-	if #text <= 255 then event:addHeader('Message-Text', text)
-	else body = {message = text} end
+	if content_type or #text > 255 then
+		body = { message = text; content_type = content_type}
+	else
+		event:addHeader('Message-Text', text)
+	end
 
 	if params then
 		if not body then body = {} end
